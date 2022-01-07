@@ -1,3 +1,5 @@
+mod models;
+
 use anyhow::Result;
 use serde::Deserialize;
 
