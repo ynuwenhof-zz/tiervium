@@ -8,6 +8,7 @@ toml = "0.5.8"
 
 [dependencies.serde]
 version = "1.0.133"
+features = ["derive"]
 
 [dependencies.tokio]
 version = "1.15.0"
