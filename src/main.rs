@@ -1,11 +1,11 @@
 mod models;
-
-use anyhow::Result;
-use serde::Deserialize;
-
-use reqwest::header::HeaderMap;
+mod tier;
 
 use tokio::fs;
+use anyhow::Result;
+use serde::Deserialize;
+use reqwest::header::HeaderMap;
+
 
 #[derive(Deserialize)]
 struct Config {
