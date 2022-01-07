@@ -12,3 +12,14 @@ pub struct Vehicle {
     container: bool,
     license_plate: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct VehicleStatus {
+    vehicle_id: String,
+    lat: f64,
+    lng: f64,
+    battery: i64,
+    state: String,
+    rentable: bool,
+    timestamp: String,
+}
