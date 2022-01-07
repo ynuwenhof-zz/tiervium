@@ -7,6 +7,7 @@ edition = "2021"
 toml = "0.5.8"
 anyhow = "1.0.52"
 mongodb = "2.1.0"
+reqwest = "0.11.8"
 
 [dependencies.serde]
 version = "1.0.133"
