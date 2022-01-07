@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 toml = "0.5.8"
 
+[dependencies.serde]
+version = "1.0.133"
+
 [dependencies.tokio]
 version = "1.15.0"
 features = ["macros", "rt-multi-thread"]
