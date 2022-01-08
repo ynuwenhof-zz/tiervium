@@ -1,7 +1,7 @@
 use serde_json::Value;
 use anyhow::{anyhow, Result};
 
-pub async fn zones(http_client: reqwest::Client) -> Result<Vec<String>> {
+pub async fn zones(http_client: &reqwest::Client) -> Result<Vec<String>> {
     let content = http_client
         .get("https://platform.tier-services.io/v1/zone?type=root")
         .send()
