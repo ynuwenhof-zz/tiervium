@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use serde_json::Value;
 use anyhow::{anyhow, Result};
 
@@ -30,7 +32,7 @@ pub async fn get_zones(http_client: &reqwest::Client) -> Result<Vec<String>> {
     Ok(zones)
 }
 
-pub async fn get_vehicles_by_zone(http_client: &reqwest::Client, zone: &str) -> Result<Vec<VehicleLog>> {
+pub async fn get_vehicles_by_zone(http_client: Arc<reqwest::Client>, zone: &str) -> Result<Vec<VehicleLog>> {
     let content = http_client
         .get(format!("https://platform.tier-services.io/v2/vehicle?zoneId={}", zone))
         .send()
@@ -59,7 +61,7 @@ pub async fn get_vehicles_by_zone(http_client: &reqwest::Client, zone: &str) -> 
     Ok(logs)
 }
 
-pub async fn get_vehicle(http_client: &reqwest::Client, uuid: &str) -> Result<VehicleLog> {
+pub async fn get_vehicle(http_client: Arc<reqwest::Client>, uuid: &str) -> Result<VehicleLog> {
     let content = http_client
         .get(format!("https://platform.tier-services.io/v1/vehicle/{}", uuid))
         .send()
