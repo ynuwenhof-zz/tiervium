@@ -2,8 +2,8 @@ mod models;
 mod tier;
 
 use tokio::fs;
-use anyhow::Result;
 use serde::Deserialize;
+use anyhow::{Result, Context};
 use reqwest::header::HeaderMap;
 
 #[derive(Deserialize)]
@@ -15,8 +15,12 @@ struct Config {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let content = fs::read_to_string("Config.toml").await?;
-    let config: Config = toml::from_str(&content)?;
+    let content = fs::read_to_string("Config.toml")
+        .await
+        .with_context(|| "Failed to read contents from Config.toml")?;
+
+    let config: Config = toml::from_str(&content)
+        .with_context(|| "Failed to parse config")?;
 
     let mut headers = HeaderMap::new();
     headers.insert("X-Api-Key", config.key.parse()?);
@@ -26,14 +30,9 @@ async fn main() -> Result<()> {
         .build()?;
 
     let zones = match config.zones {
-        Some(mut zones) => {
-            if zones.is_empty() {
-                zones = tier::zones(&http_client).await?;
-            }
-
-            zones
-        },
-        None => tier::zones(&http_client).await?,
+        Some(zones) => zones,
+        None => tier::zones(&http_client).await
+            .with_context(|| "Failed to retrieve tier zones")?,
     };
 
     Ok(())
