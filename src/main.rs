@@ -10,7 +10,7 @@ use reqwest::header::HeaderMap;
 struct Config {
     mongodb: String,
     key: String,
-    zones: Vec<String>,
+    zones: Option<Vec<String>>,
 }
 
 #[tokio::main]
@@ -25,10 +25,15 @@ async fn main() -> Result<()> {
         .default_headers(headers)
         .build()?;
 
-    let mut zones = config.zones;
-    if zones.is_empty() {
-        zones = tier::zones(http_client)
-            .await?;
+    let zones = match config.zones {
+        Some(mut zones) => {
+            if zones.is_empty() {
+                zones = tier::zones(&http_client).await?;
+            }
+
+            zones
+        },
+        None => tier::zones(&http_client).await?,
     };
 
     Ok(())
