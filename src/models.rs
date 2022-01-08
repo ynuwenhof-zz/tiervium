@@ -2,24 +2,24 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Vehicle {
-    id: String,
-    code: i64,
-    zone: String,
-    kind: String,
-    max_speed: i64,
-    vendor: String,
-    helmet: String,
-    container: bool,
-    license_plate: String,
+    pub id: String,
+    pub code: i64,
+    pub zone: String,
+    pub kind: String,
+    pub max_speed: i64,
+    pub vendor: String,
+    pub helmet: String,
+    pub container: bool,
+    pub license_plate: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct VehicleStatus {
-    vehicle_id: String,
-    lat: f64,
-    lng: f64,
-    battery: i64,
-    state: String,
-    rentable: bool,
-    timestamp: String,
+    pub vehicle_id: String,
+    pub lat: f64,
+    pub lng: f64,
+    pub battery: i64,
+    pub state: String,
+    pub rentable: bool,
+    pub timestamp: String,
 }
