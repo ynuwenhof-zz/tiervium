@@ -6,7 +6,6 @@ use anyhow::Result;
 use serde::Deserialize;
 use reqwest::header::HeaderMap;
 
-
 #[derive(Deserialize)]
 struct Config {
     mongodb: String,
@@ -25,6 +24,12 @@ async fn main() -> Result<()> {
     let http_client = reqwest::Client::builder()
         .default_headers(headers)
         .build()?;
+
+    let mut zones = config.zones;
+    if zones.is_empty() {
+        zones = tier::zones(http_client)
+            .await?;
+    };
 
     Ok(())
 }
