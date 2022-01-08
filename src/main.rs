@@ -2,12 +2,15 @@ mod models;
 mod tier;
 
 use tokio::fs;
+use tokio::time;
 use serde::Deserialize;
+use std::time::Duration;
 use anyhow::{Result, Context};
 use reqwest::header::HeaderMap;
 
 #[derive(Deserialize)]
 struct Config {
+    delay: u64,
     mongodb: String,
     key: String,
     zones: Option<Vec<String>>,
@@ -31,9 +34,11 @@ async fn main() -> Result<()> {
 
     let zones = match config.zones {
         Some(zones) => zones,
-        None => tier::zones(&http_client).await
+        None => tier::get_zones(&http_client).await
             .with_context(|| "Failed to retrieve tier zones")?,
     };
 
-    Ok(())
+    loop {
+        time::sleep(Duration::from_secs(config.delay)).await;
+    }
 }
