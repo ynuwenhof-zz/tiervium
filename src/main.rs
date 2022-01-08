@@ -57,10 +57,8 @@ async fn main() -> Result<()> {
 }
 
 async fn handle(http_client: Arc<reqwest::Client>, zone: &str) -> Result<()> {
-    let logs = get_vehicles_by_zone(http_client, &zone).await?;
+    let logs = get_vehicles_by_zone(http_client, zone).await?;
     // TODO: Process the logs
-
-    println!("{}", zone);
 
     Ok(())
 }
