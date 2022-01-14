@@ -82,7 +82,6 @@ async fn main() -> Result<()> {
     let cache = Arc::new(Cache::new());
 
     loop {
-        let timer = tokio::time::Instant::now();
         let mut handles = Vec::with_capacity(zones.len());
 
         for zone in &zones {
@@ -91,16 +90,11 @@ async fn main() -> Result<()> {
             let mongo = mongo.clone();
             let zone = zone.clone();
 
-            let handle = tokio::spawn(async move {
-                if let Err(err) = handle(http, cache, mongo, zone).await {
-                    println!("{:?}", err);
-                }
-            });
+            let handle = tokio::spawn(async move { handle(http, cache, mongo, zone).await });
             handles.push(handle);
         }
 
         future::join_all(handles).await;
-        println!("{}", timer.elapsed().as_secs_f64());
         time::sleep(Duration::from_secs(config.delay)).await;
     }
 }
