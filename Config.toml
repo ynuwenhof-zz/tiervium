@@ -1,0 +1,11 @@
+# Delay between scans in seconds
+delay = 60
+
+# MongoDB connection uri
+mongodb = "mongodb://localhost:27017"
+
+# Tier API key
+key = "bpEUTJEBTf74oGRWxaIcW7aeZMzDDODe1yBoSxi2"
+
+# Zones to scan, comment out to scan all zones
+zones = ["COLOGNE"]
