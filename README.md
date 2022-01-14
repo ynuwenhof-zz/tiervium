@@ -4,5 +4,6 @@
 
 ## 🔧 TODO
 
+- Logging
 - Track rented scooters
 - Data visualization
