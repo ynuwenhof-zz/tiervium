@@ -1,9 +1,11 @@
 mod cache;
+mod context;
 mod models;
 mod tier;
 
 use crate::cache::Cache;
-use anyhow::{anyhow, Context, Result};
+use crate::context::Context;
+use anyhow::{anyhow, Result};
 use futures::future;
 use models::{Log, Vehicle};
 use mongodb::bson;
@@ -33,11 +35,8 @@ struct Config {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let content = fs::read_to_string("Config.toml")
-        .await
-        .with_context(|| "Failed to read contents from Config.toml")?;
-
-    let config: Config = toml::from_str(&content).with_context(|| "Failed to parse config")?;
+    let content = fs::read_to_string("Config.toml").await?;
+    let config: Config = toml::from_str(&content)?;
 
     let mongo = Arc::new(mongodb::Client::with_uri_str(&config.mongodb).await?);
 
@@ -74,9 +73,7 @@ async fn main() -> Result<()> {
 
     let zones = match config.zones {
         Some(zones) => zones,
-        None => tier::get_zones(http.clone())
-            .await
-            .with_context(|| "Failed to retrieve tier zones")?,
+        None => tier::get_zones(http.clone()).await?,
     };
 
     let cache = Arc::new(Cache::new());
@@ -85,12 +82,10 @@ async fn main() -> Result<()> {
         let mut handles = Vec::with_capacity(zones.len());
 
         for zone in &zones {
-            let http = http.clone();
-            let cache = cache.clone();
-            let mongo = mongo.clone();
+            let ctx = Context::new(http.clone(), mongo.clone(), cache.clone());
             let zone = zone.clone();
 
-            let handle = tokio::spawn(async move { handle(http, cache, mongo, zone).await });
+            let handle = tokio::spawn(async move { handle(ctx, zone).await });
             handles.push(handle);
         }
 
@@ -99,27 +94,24 @@ async fn main() -> Result<()> {
     }
 }
 
-async fn handle(
-    http: Arc<reqwest::Client>,
-    cache: Arc<Cache>,
-    mongo: Arc<mongodb::Client>,
-    zone: impl AsRef<str>,
-) -> Result<()> {
-    let (vehicles, logs) = tier::get_vehicles_by_zone(http, zone.as_ref()).await?;
+async fn handle(ctx: Context, zone: impl AsRef<str>) -> Result<()> {
+    let (vehicles, logs) = tier::get_vehicles_by_zone(ctx.http, zone.as_ref()).await?;
 
-    let cached_vehicles = cache
+    let cached_vehicles = ctx
+        .cache
         .vehicles(zone.as_ref())
         .await
         .ok_or(anyhow!("expected vehicles in cache"))?;
 
-    let cached_logs = cache
+    let cached_logs = ctx
+        .cache
         .logs(zone.as_ref())
         .await
         .ok_or(anyhow!("expected logs in cache"))?;
 
-    let database = mongo.database(DATABASE);
+    let database = ctx.mongo.database(DATABASE);
 
-    let mut session = mongo.start_session(None).await?;
+    let mut session = ctx.mongo.start_session(None).await?;
     session.start_transaction(None).await?;
 
     for vehicle in &vehicles {
@@ -182,13 +174,13 @@ async fn handle(
     session.commit_transaction().await?;
 
     {
-        cache
+        ctx.cache
             .vehicles
             .write()
             .await
             .insert(zone.as_ref().to_string(), vehicles);
 
-        cache
+        ctx.cache
             .logs
             .write()
             .await
