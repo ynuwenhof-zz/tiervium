@@ -2,7 +2,7 @@ use mongodb::bson;
 use mongodb::bson::Uuid;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vehicle {
     pub uuid: Uuid,
     pub code: i32,
@@ -15,7 +15,7 @@ pub struct Vehicle {
     pub license_plate: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Log {
     pub vehicle_uuid: Uuid,
     pub time: bson::DateTime,

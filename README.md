@@ -4,6 +4,5 @@
 
 ## 🔧 TODO
 
-- Caching
 - Track rented scooters
 - Data visualization

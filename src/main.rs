@@ -1,7 +1,9 @@
+mod cache;
 mod models;
 mod tier;
 
-use anyhow::{Context, Result};
+use crate::cache::Cache;
+use anyhow::{anyhow, Context, Result};
 use futures::future;
 use models::{Log, Vehicle};
 use mongodb::bson;
@@ -77,31 +79,49 @@ async fn main() -> Result<()> {
             .with_context(|| "Failed to retrieve tier zones")?,
     };
 
+    let cache = Arc::new(Cache::new());
+
     loop {
+        let timer = tokio::time::Instant::now();
         let mut handles = Vec::with_capacity(zones.len());
 
         for zone in &zones {
             let http = http.clone();
+            let cache = cache.clone();
             let mongo = mongo.clone();
-
             let zone = zone.clone();
 
-            let handle = tokio::spawn(async move { handle(http, mongo, &zone).await });
-
+            let handle = tokio::spawn(async move {
+                if let Err(err) = handle(http, cache, mongo, zone).await {
+                    println!("{:?}", err);
+                }
+            });
             handles.push(handle);
         }
 
         future::join_all(handles).await;
+        println!("{}", timer.elapsed().as_secs_f64());
         time::sleep(Duration::from_secs(config.delay)).await;
     }
 }
 
 async fn handle(
     http: Arc<reqwest::Client>,
+    cache: Arc<Cache>,
     mongo: Arc<mongodb::Client>,
     zone: impl AsRef<str>,
 ) -> Result<()> {
     let (vehicles, logs) = tier::get_vehicles_by_zone(http, zone.as_ref()).await?;
+
+    let cached_vehicles = cache
+        .vehicles(zone.as_ref())
+        .await
+        .ok_or(anyhow!("expected vehicles in cache"))?;
+
+    let cached_logs = cache
+        .logs(zone.as_ref())
+        .await
+        .ok_or(anyhow!("expected logs in cache"))?;
 
     let database = mongo.database(DATABASE);
 
@@ -109,6 +129,10 @@ async fn handle(
     session.start_transaction(None).await?;
 
     for vehicle in &vehicles {
+        if cached_vehicles.contains(vehicle) {
+            continue;
+        }
+
         database
             .collection::<Vehicle>(VEHICLE_COLLECTION)
             .update_one_with_session(
@@ -127,6 +151,16 @@ async fn handle(
     let log_collection = database.collection::<Log>(LOG_COLLECTION);
 
     for log in &logs {
+        if let Some(cached_log) = cached_logs
+            .iter()
+            .find(|l| l.vehicle_uuid == log.vehicle_uuid)
+        {
+            if cached_log.time == log.time || cached_log.lat == log.lat && cached_log.lng == log.lng
+            {
+                continue;
+            }
+        }
+
         if let Some(existing_log) = log_collection
             .find_one_with_session(
                 doc!("vehicle_uuid": &log.vehicle_uuid),
@@ -152,6 +186,20 @@ async fn handle(
     }
 
     session.commit_transaction().await?;
+
+    {
+        cache
+            .vehicles
+            .write()
+            .await
+            .insert(zone.as_ref().to_string(), vehicles);
+
+        cache
+            .logs
+            .write()
+            .await
+            .insert(zone.as_ref().to_string(), logs);
+    }
 
     // TODO: Track rented vehicles
 
