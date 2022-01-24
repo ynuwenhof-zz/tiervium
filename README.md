@@ -4,6 +4,5 @@
 
 ## 🔧 TODO
 
-- Migrations
 - Logging
 - Data visualization
