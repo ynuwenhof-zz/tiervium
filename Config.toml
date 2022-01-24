@@ -1,8 +1,11 @@
 # Delay between scans in seconds
 delay = 60
 
-# MongoDB connection uri
-mongodb = "mongodb://localhost:27017"
+# API request timeout in seconds
+timeout = 20
+
+# MySQL URL
+mysql = "mysql://user:pass@host/database"
 
 # Tier API key
 key = "bpEUTJEBTf74oGRWxaIcW7aeZMzDDODe1yBoSxi2"
