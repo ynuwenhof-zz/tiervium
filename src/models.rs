@@ -1,10 +1,9 @@
-use mongodb::bson;
-use mongodb::bson::Uuid;
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
+use serde::Deserialize;
+use sqlx::FromRow;
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vehicle {
-    pub uuid: Uuid,
+    pub uuid: String,
     pub code: i32,
     pub max_speed: i32,
     pub has_box: bool,
@@ -15,15 +14,30 @@ pub struct Vehicle {
     pub license_plate: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, FromRow)]
 pub struct Log {
-    pub vehicle_uuid: Uuid,
-    pub time: bson::DateTime,
+    pub vehicle_uuid: String,
+    pub time: DateTime<Utc>,
     pub lat: f32,
     pub lng: f32,
     pub battery: i32,
     pub rentable: bool,
     pub state: String,
+}
+
+impl Log {
+    pub fn distance(&self, other: &Log) -> f32 {
+        let lat = self.lat.to_radians();
+        let lng = (self.lng - other.lng).to_radians();
+
+        let other_lat = other.lat.to_radians();
+
+        let x = lng.cos() * lat.cos() - other_lat.cos();
+        let y = lng.sin() * lat.cos();
+        let z = lat.sin() - other_lat.sin();
+
+        ((x * x + y * y + z * z).sqrt() / 2.0).asin() * 2.0 * 6371e3
+    }
 }
 
 #[derive(Deserialize)]

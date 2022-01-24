@@ -1,14 +1,17 @@
 use crate::cache::Cache;
+use reqwest::Client;
+use sqlx::MySqlPool;
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct Context {
-    pub http: Arc<reqwest::Client>,
-    pub mongo: Arc<mongodb::Client>,
+    pub http: Arc<Client>,
+    pub pool: Arc<MySqlPool>,
     pub cache: Arc<Cache>,
 }
 
 impl Context {
-    pub fn new(http: Arc<reqwest::Client>, mongo: Arc<mongodb::Client>, cache: Arc<Cache>) -> Self {
-        Self { http, mongo, cache }
+    pub fn new(http: Arc<Client>, pool: Arc<MySqlPool>, cache: Arc<Cache>) -> Self {
+        Self { http, pool, cache }
     }
 }

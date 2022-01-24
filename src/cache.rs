@@ -1,11 +1,10 @@
-use crate::models::{Log, Vehicle};
+use crate::models::Log;
 use std::collections::HashMap;
-use tokio::sync::RwLock;
+use std::sync::RwLock;
 
 #[derive(Default)]
 pub struct Cache {
-    pub vehicles: RwLock<HashMap<String, Vec<Vehicle>>>,
-    pub logs: RwLock<HashMap<String, Vec<Log>>>,
+    logs: RwLock<HashMap<String, Vec<Log>>>,
 }
 
 impl Cache {
@@ -13,39 +12,11 @@ impl Cache {
         Self::default()
     }
 
-    pub async fn vehicles(&self, zone: impl AsRef<str>) -> Option<Vec<Vehicle>> {
-        let vehicles = self.vehicles.read().await.get(zone.as_ref()).cloned();
-
-        match vehicles {
-            None => {
-                {
-                    self.vehicles
-                        .write()
-                        .await
-                        .insert(zone.as_ref().to_string(), Vec::new());
-                }
-
-                self.vehicles.read().await.get(zone.as_ref()).cloned()
-            }
-            Some(vehicles) => Some(vehicles),
-        }
+    pub fn logs(&self, zone: impl AsRef<str>) -> Option<Vec<Log>> {
+        self.logs.read().unwrap().get(zone.as_ref()).cloned()
     }
 
-    pub async fn logs(&self, zone: impl AsRef<str>) -> Option<Vec<Log>> {
-        let logs = self.logs.read().await.get(zone.as_ref()).cloned();
-
-        match logs {
-            None => {
-                {
-                    self.logs
-                        .write()
-                        .await
-                        .insert(zone.as_ref().to_string(), Vec::new());
-                }
-
-                self.logs.read().await.get(zone.as_ref()).cloned()
-            }
-            Some(logs) => Some(logs),
-        }
+    pub fn update_logs(&self, zone: String, logs: Vec<Log>) {
+        self.logs.write().unwrap().insert(zone, logs);
     }
 }

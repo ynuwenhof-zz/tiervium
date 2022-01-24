@@ -11,13 +11,13 @@ reqwest = "0.11.8"
 futures = "0.3.19"
 serde_json = "1.0.74"
 
+[dependencies.sqlx]
+version = "0.5.10"
+features = ["mysql", "chrono", "runtime-tokio-rustls"]
+
 [dependencies.serde]
 version = "1.0.133"
 features = ["derive"]
-
-[dependencies.mongodb]
-version = "2.1.0"
-features = ["bson-uuid-0_8", "bson-chrono-0_4"]
 
 [dependencies.tokio]
 version = "1.15.0"
