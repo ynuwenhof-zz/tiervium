@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS vehicles (
-	uuid char(36) NOT NULL,
+    uuid char(36) NOT NULL,
     code int NOT NULL,
     max_speed int NOT NULL,
     has_box boolean NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
 );
 
 CREATE TABLE IF NOT EXISTS logs (
-	id int NOT NULL AUTO_INCREMENT,
+    id int NOT NULL AUTO_INCREMENT,
     vehicle_uuid char(36) NOT NULL,
     time datetime NOT NULL,
     lat float NOT NULL,
