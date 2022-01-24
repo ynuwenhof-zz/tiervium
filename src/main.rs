@@ -4,8 +4,8 @@ mod context;
 mod models;
 mod tier;
 
-use anyhow::Result;
 use cache::Cache;
+use colored::Colorize;
 use context::Context;
 use futures::future;
 use reqwest::header::HeaderMap;
@@ -14,6 +14,7 @@ use serde::Deserialize;
 use sqlx::MySqlPool;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::time::Instant;
 use tokio::{fs, time};
 
 #[derive(Deserialize)]
@@ -26,7 +27,7 @@ struct Config {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     let content = fs::read_to_string("Config.toml").await?;
     let config: Config = toml::from_str(&content)?;
 
@@ -46,10 +47,19 @@ async fn main() -> Result<()> {
     };
 
     let pool = Arc::new(MySqlPool::connect(&config.mysql).await?);
+    sqlx::migrate!().run(&*pool).await?;
+
     let cache = Arc::new(Cache::new());
     let ctx = Context::new(http, pool, cache);
 
     loop {
+        println!(
+            "{} Scraping {} zone(s)...",
+            "[>]".bright_green(),
+            zones.len().to_string().bold()
+        );
+
+        let timer = Instant::now();
         let mut handles = Vec::with_capacity(zones.len());
 
         for zone in &zones {
@@ -58,7 +68,7 @@ async fn main() -> Result<()> {
 
             let handle = tokio::spawn(async move {
                 if let Err(err) = handle(ctx, zone.clone()).await {
-                    println!("{}: {}", zone, err);
+                    println!("{} {}: {}", "[!]".bright_red(), zone, err);
                 }
             });
 
@@ -66,6 +76,14 @@ async fn main() -> Result<()> {
         }
 
         future::join_all(handles).await;
+
+        println!(
+            "{} Scraping {} zone(s) took {} seconds",
+            "[>]".bright_green(),
+            zones.len().to_string().bold(),
+            format!("{:.2}", timer.elapsed().as_secs_f32()).bold()
+        );
+
         time::sleep(Duration::from_secs(config.delay)).await;
     }
 }
@@ -87,7 +105,6 @@ async fn handle(ctx: Context, zone: impl AsRef<str>) -> anyhow::Result<()> {
             Some(i) => logs.swap_remove(i),
             None => {
                 let hidden_log = tier::vehicle(&ctx.http, &cached_log.vehicle_uuid).await?.1;
-
                 new_cache.push(hidden_log.clone());
                 hidden_log
             }

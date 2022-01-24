@@ -4,5 +4,4 @@
 
 ## 🔧 TODO
 
-- Logging
 - Data visualization
