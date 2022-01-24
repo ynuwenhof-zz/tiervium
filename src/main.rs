@@ -84,6 +84,12 @@ async fn main() -> anyhow::Result<()> {
             format!("{:.2}", timer.elapsed().as_secs_f32()).bold()
         );
 
+        println!(
+            "{} Waiting for {} seconds before scraping again...",
+            "[>]".bright_green(),
+            config.delay.to_string().bold()
+        );
+
         time::sleep(Duration::from_secs(config.delay)).await;
     }
 }
