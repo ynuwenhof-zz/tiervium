@@ -4,4 +4,5 @@
 
 ## 🔧 TODO
 
+- Sanitize input
 - Data visualization
