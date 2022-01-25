@@ -5,13 +5,14 @@ mod models;
 mod tier;
 
 use cache::Cache;
-use colored::Colorize;
 use context::Context;
 use futures::future;
+use log::{info, warn};
 use reqwest::header::HeaderMap;
 use reqwest::Client;
 use serde::Deserialize;
 use sqlx::MySqlPool;
+use std::env;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::Instant;
@@ -24,12 +25,18 @@ struct Config {
     mysql: String,
     key: String,
     zones: Option<Vec<String>>,
+    log_level: String,
+    log_style: String,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let content = fs::read_to_string("Config.toml").await?;
     let config: Config = toml::from_str(&content)?;
+
+    env::set_var("RUST_LOG", format!("{},sqlx=error", config.log_level));
+    env::set_var("RUST_LOG_STYLE", config.log_style);
+    env_logger::init();
 
     let mut headers = HeaderMap::new();
     headers.insert("X-Api-Key", config.key.parse()?);
@@ -46,6 +53,8 @@ async fn main() -> anyhow::Result<()> {
         None => tier::zones(&http).await?,
     };
 
+    info!("Loaded {} zone(s)", zones.len());
+
     let pool = Arc::new(MySqlPool::connect(&config.mysql).await?);
     sqlx::migrate!().run(&*pool).await?;
 
@@ -53,12 +62,6 @@ async fn main() -> anyhow::Result<()> {
     let ctx = Context::new(http, pool, cache);
 
     loop {
-        println!(
-            "{} Scraping {} zone(s)...",
-            "[>]".bright_green(),
-            zones.len().to_string().bold()
-        );
-
         let timer = Instant::now();
         let mut handles = Vec::with_capacity(zones.len());
 
@@ -68,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
 
             let handle = tokio::spawn(async move {
                 if let Err(err) = handle(ctx, zone.clone()).await {
-                    println!("{} {}: {}", "[!]".bright_red(), zone, err);
+                    warn!("{}: {}", zone, err);
                 }
             });
 
@@ -76,19 +79,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         future::join_all(handles).await;
-
-        println!(
-            "{} Scraping {} zone(s) took {} seconds",
-            "[>]".bright_green(),
-            zones.len().to_string().bold(),
-            format!("{:.2}", timer.elapsed().as_secs_f32()).bold()
-        );
-
-        println!(
-            "{} Waiting for {} seconds before scraping again...",
-            "[>]".bright_green(),
-            config.delay.to_string().bold()
-        );
+        info!("Scraping took {:.2}s", timer.elapsed().as_secs_f32());
 
         time::sleep(Duration::from_secs(config.delay)).await;
     }

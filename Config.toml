@@ -1,5 +1,5 @@
 # Delay between scans in seconds
-delay = 60
+delay = 40
 
 # API request timeout in seconds
 timeout = 20
@@ -12,3 +12,6 @@ key = "bpEUTJEBTf74oGRWxaIcW7aeZMzDDODe1yBoSxi2"
 
 # Zones to scan, comment out to scan all zones
 zones = ["COLOGNE"]
+
+log_level = "info"
+log_style = "auto"
