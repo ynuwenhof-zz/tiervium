@@ -25,8 +25,13 @@ struct Config {
     mysql: String,
     key: String,
     zones: Option<Vec<String>>,
-    log_level: String,
-    log_style: String,
+    log: LogConfig,
+}
+
+#[derive(Deserialize)]
+struct LogConfig {
+    level: String,
+    style: String,
 }
 
 #[tokio::main]
@@ -34,8 +39,8 @@ async fn main() -> anyhow::Result<()> {
     let content = fs::read_to_string("Config.toml").await?;
     let config: Config = toml::from_str(&content)?;
 
-    env::set_var("RUST_LOG", format!("{},sqlx=error", config.log_level));
-    env::set_var("RUST_LOG_STYLE", config.log_style);
+    env::set_var("RUST_LOG", format!("{},sqlx=error", config.log.level));
+    env::set_var("RUST_LOG_STYLE", config.log.style);
     env_logger::init();
 
     let mut headers = HeaderMap::new();
