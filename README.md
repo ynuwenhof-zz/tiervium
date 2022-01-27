@@ -6,3 +6,4 @@
 
 - Sanitize input
 - Data visualization
+- Serve the collected data
